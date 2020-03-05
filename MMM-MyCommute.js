@@ -36,6 +36,7 @@ Module.register("MMM-MyCommute", {
 		maxCalendarEvents: 0,
 		maxCalendarTime: 24 * 60 * 60 * 1000,
 		calendarOptions: [{mode: "driving"}],
+		showArrivalTime: true,
 		destinations: [
 			{
 				destination: "40 Bay St, Toronto, ON M5J 2X2",
@@ -95,14 +96,12 @@ Module.register("MMM-MyCommute", {
 		"rail"
 	],
 
-
 	avoidOptions: [
 		"tolls",
 		"highways",
 		"ferries",
 		"indoor"
 	],
-
 
 	// Icons to use for each transportation mode
 	symbols: {
@@ -131,7 +130,6 @@ Module.register("MMM-MyCommute", {
 	},
 
 	start: function() {
-
 		Log.info("Starting module: " + this.name);
 
 		this.predictions = [];
@@ -242,7 +240,6 @@ Module.register("MMM-MyCommute", {
 		this.appointmentDestinations = this.appointmentDestinations.slice(0, this.config.maxCalendarEvents);
 	},
 
-
 	getDestinations: function() {
 		return this.config.destinations.concat(this.appointmentDestinations);
 	},
@@ -266,7 +263,6 @@ Module.register("MMM-MyCommute", {
 					const url = "https://maps.googleapis.com/maps/api/directions/json" + this.getParams(d);
 					destinationGetInfo.push({ url:url, config: d});
 				}
-
 			}
 			this.inWindow = true;
 
@@ -277,7 +273,6 @@ Module.register("MMM-MyCommute", {
 				this.inWindow = false;
 				this.isHidden = true;
 			}
-
 		} else {
 			this.hide(1000, {lockString: this.identifier});
 			this.inWindow = false;
@@ -360,12 +355,16 @@ Module.register("MMM-MyCommute", {
 	},
 
 	formatTime: function(time, timeInTraffic) {
-
 		const timeEl = document.createElement("span");
 		timeEl.classList.add("travel-time");
+		let now = moment();
 		if (timeInTraffic != null) {
-			timeEl.innerHTML = moment.duration(Number(timeInTraffic), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim});
-
+			if(this.config.showArrivalTime) {
+				timeEl.innerHTML = moment.duration(Number(timeInTraffic), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim}) + " - " + now.add(Number(timeInTraffic), "seconds").format("HH:mm");
+			}
+			else {
+				timeEl.innerHTML = moment.duration(Number(timeInTraffic), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim});
+			}
 			const variance = timeInTraffic / time;
 			if (this.config.colorCodeTravelTime) {
 				if (variance > this.config.poorTimeThreshold) {
@@ -376,13 +375,16 @@ Module.register("MMM-MyCommute", {
 					timeEl.classList.add("status-good");
 				}
 			}
-
 		} else {
-			timeEl.innerHTML = moment.duration(Number(time), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim});
+			if(this.config.showArrivalTime) {
+				timeEl.innerHTML = moment.duration(Number(time), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim}) + " - " + now.add(Number(time), "seconds").format("HH:mm");
+			}
+			else {
+				timeEl.innerHTML = moment.duration(Number(time), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim});
+			}
 			timeEl.classList.add("status-good");
 		}
 		return timeEl;
-
 	},
 
 	getTransitIcon: function(dest, route) {
@@ -427,7 +429,7 @@ Module.register("MMM-MyCommute", {
 			loading.innerHTML = this.translate("LOADING");
 			loading.className = "dimmed light small";
 			wrapper.appendChild(loading);
-			return wrapper
+			return wrapper;
 		}
 
 		const destinations = this.getDestinations();
@@ -453,7 +455,6 @@ Module.register("MMM-MyCommute", {
 
 			//different rendering for single route vs multiple
 			if (p.error) {
-
 				//no routes available.	display an error instead.
 				const errorTxt = document.createElement("span");
 				errorTxt.classList.add("route-error");
@@ -462,41 +463,40 @@ Module.register("MMM-MyCommute", {
 
 			} else if (p.routes.length === 1 || !this.config.showSummary) {
 				let r = p.routes[0];
-				row.appendChild( this.formatTime(r.time, r.timeInTraffic) );
 
 				//summary?
 				if (this.config.showSummary) {
 					var singleSummary = document.createElement("div");
 					singleSummary.classList.add("route-summary");
-
 					if (r.transitInfo) {
 						symbolIcon = this.getTransitIcon(p.config,r);
 						this.buildTransitSummary(r.transitInfo, singleSummary);
 					} else {
 						singleSummary.innerHTML = r.summary;
 					}
+					singleSummary.appendChild(this.formatTime(r.time, r.timeInTraffic));
 					row.appendChild(singleSummary);
+				}
+				else {
+					row.appendChild(this.formatTime(r.time, r.timeInTraffic));
 				}
 			} else {
 				row.classList.add("with-multiple-routes");
-
 				for (let j = 0; j < p.routes.length; j++) {
 					const routeSummaryOuter = document.createElement("div");
 					routeSummaryOuter.classList.add("route-summary-outer");
 					let r = p.routes[j];
-					routeSummaryOuter.appendChild( this.formatTime(r.time, r.timeInTraffic) );
 
 					var multiSummary = document.createElement("div");
 					multiSummary.classList.add("route-summary");
-
 					if (r.transitInfo) {
 						symbolIcon = this.getTransitIcon(p.config,r);
 						this.buildTransitSummary(r.transitInfo, multiSummary);
-
 					} else {
 						multiSummary.innerHTML = r.summary;
 					}
 					routeSummaryOuter.appendChild(multiSummary);
+					routeSummaryOuter.appendChild(this.formatTime(r.time, r.timeInTraffic));
 					row.appendChild(routeSummaryOuter);
 				}
 			}
