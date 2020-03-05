@@ -63,6 +63,13 @@ Module.register("MMM-MyCommute", {
 		]
 	},
 
+	getTranslations: function() {
+		return {
+			en: "translations/en.json",
+			hu: "translations/hu.json"
+		};
+	},
+
 	// Define required scripts.
 	getScripts: function() {
 		return ["moment.js", this.file("node_modules/moment-duration-format/lib/moment-duration-format.js")];
@@ -127,7 +134,7 @@ Module.register("MMM-MyCommute", {
 
 		Log.info("Starting module: " + this.name);
 
-		this.predictions = new Array();
+		this.predictions = [];
 		this.loading = true;
 		this.inWindow = true;
 		this.isHidden = false;
@@ -197,7 +204,7 @@ Module.register("MMM-MyCommute", {
 
 		if ( now.isBefore(startTime) || now.isAfter(endTime) ) {
 			return false;
-		} else if ( hideDays.indexOf( now.day() ) != -1) {
+		} else if ( hideDays.indexOf( now.day() ) !== -1) {
 			return false;
 		}
 
@@ -209,7 +216,7 @@ Module.register("MMM-MyCommute", {
 	setAppointmentDestinations: function(payload) {
 		this.appointmentDestinations = [];
 
-		if ( this.config.calendarOptions.length == 0) {
+		if ( this.config.calendarOptions.length === 0) {
 			// No routing configs for calendar events
 			// Skip looking those up then
 			return;
@@ -239,8 +246,7 @@ Module.register("MMM-MyCommute", {
 
 
 	getDestinations: function() {
-		var dests = this.config.destinations.concat(this.appointmentDestinations);
-		return dests;
+		return this.config.destinations.concat(this.appointmentDestinations);
 	},
 
 	getData: function() {
@@ -249,7 +255,7 @@ Module.register("MMM-MyCommute", {
 		//only poll if in window
 		if ( this.isInWindow( this.config.startTime, this.config.endTime, this.config.hideDays ) ) {
 			//build URLs
-			var destinationGetInfo = new Array();
+			var destinationGetInfo = [];
 			var destinations = this.getDestinations();
 			for(var i = 0; i < destinations.length; i++) {
 
@@ -291,18 +297,18 @@ Module.register("MMM-MyCommute", {
 		params += "&language=" + this.config.lang;
 		//travel mode
 		var mode = "driving";
-		if (dest.mode && this.travelModes.indexOf(dest.mode) != -1) {
+		if (dest.mode && this.travelModes.indexOf(dest.mode) !== -1) {
 			mode = dest.mode;
 		}
 		params += "&mode=" + mode;
 
 		//transit mode if travelMode = "transit"
-		if (mode == "transit" && dest.transitMode) {
+		if (mode === "transit" && dest.transitMode) {
 			var tModes = dest.transitMode.split("|");
 			var sanitizedTransitModes = "";
 			for (let i = 0; i < tModes.length; i++) {
-				if (this.transitModes.indexOf(tModes[i]) != -1) {
-					sanitizedTransitModes += (sanitizedTransitModes == "" ? tModes[i] : "|" + tModes[i]);
+				if (this.transitModes.indexOf(tModes[i]) !== -1) {
+					sanitizedTransitModes += (sanitizedTransitModes === "" ? tModes[i] : "|" + tModes[i]);
 				}
 			}
 			if (sanitizedTransitModes.length > 0) {
@@ -323,8 +329,8 @@ Module.register("MMM-MyCommute", {
 			var a = dest.avoid.split("|");
 			var sanitizedAvoidOptions = "";
 			for (let i = 0; i < a.length; i++) {
-				if (this.avoidOptions.indexOf(a[i]) != -1) {
-					sanitizedAvoidOptions += (sanitizedAvoidOptions == "" ? a[i] : "|" + a[i]);
+				if (this.avoidOptions.indexOf(a[i]) !== -1) {
+					sanitizedAvoidOptions += (sanitizedAvoidOptions === "" ? a[i] : "|" + a[i]);
 				}
 			}
 			if (sanitizedAvoidOptions.length > 0) {
@@ -333,7 +339,7 @@ Module.register("MMM-MyCommute", {
 
 		}
 
-		if (dest.alternatives == true) {
+		if (dest.alternatives === true) {
 			params += "&alternatives=true";
 		}
 
@@ -470,7 +476,7 @@ Module.register("MMM-MyCommute", {
 				errorTxt.innerHTML = "Error";
 				row.appendChild(errorTxt);
 
-			} else if (p.routes.length == 1 || !this.config.showSummary) {
+			} else if (p.routes.length === 1 || !this.config.showSummary) {
 
 				let r = p.routes[0];
 
@@ -534,7 +540,7 @@ Module.register("MMM-MyCommute", {
 			//updatedRow.classList.add("row");
 			updatedRow.classList.add("light");
 			updatedRow.classList.add("xsmall");
-			updatedRow.innerHTML = "Utoljára frissítve: "+this.lastUpdated.format("HH:mm");
+			updatedRow.innerHTML = this.translate("LAST_REFRESHED") + this.lastUpdated.format("HH:mm");
 			wrapper.appendChild(updatedRow);
 		}
 
@@ -568,7 +574,7 @@ Module.register("MMM-MyCommute", {
 	},
 
 	notificationReceived: function(notification, payload, sender) {
-		if ( notification == "DOM_OBJECTS_CREATED" && !this.inWindow) {
+		if ( notification === "DOM_OBJECTS_CREATED" && !this.inWindow) {
 			this.hide(0, {lockString: this.identifier});
 			this.isHidden = true;
 		} else if ( notification === "CALENDAR_EVENTS" ) {
