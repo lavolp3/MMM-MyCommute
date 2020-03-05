@@ -145,8 +145,7 @@ Module.register("MMM-MyCommute", {
 	},
 
 	rescheduleInterval: function() {
-		var self = this;
-
+		const self = this;
 		if(this.interval !== null) {
 			// Clear current interval, just in case
 			clearInterval(this.interval);
@@ -196,18 +195,17 @@ Module.register("MMM-MyCommute", {
 	*/
 	isInWindow: function(start, end, hideDays) {
 
-		var now = moment();
-		var startTimeSplit = start.split(":");
-		var endTimeSplit = end.split(":");
-		var startTime = moment().hour(startTimeSplit[0]).minute(startTimeSplit[1]);
-		var endTime = moment().hour(endTimeSplit[0]).minute(endTimeSplit[1]);
+		const now = moment();
+		const startTimeSplit = start.split(":");
+		const endTimeSplit = end.split(":");
+		const startTime = moment().hour(startTimeSplit[0]).minute(startTimeSplit[1]);
+		const endTime = moment().hour(endTimeSplit[0]).minute(endTimeSplit[1]);
 
-		if ( now.isBefore(startTime) || now.isAfter(endTime) ) {
+		if (now.isBefore(startTime) || now.isAfter(endTime)) {
 			return false;
 		} else if ( hideDays.indexOf( now.day() ) !== -1) {
 			return false;
 		}
-
 		return true;
 	},
 
@@ -222,18 +220,18 @@ Module.register("MMM-MyCommute", {
 			return;
 		}
 
-		for ( var i=0; i<payload.length && this.appointmentDestinations.length<this.config.maxCalendarEvents; ++i ) {
-			var calevt = payload[i];
-			if ("location" in calevt &&
-					calevt.location !== undefined &&
-					calevt.location !== false &&
-					calevt.startDate < (Date.now() + this.config.maxCalendarTime)
+		for (let i=0; i<payload.length && this.appointmentDestinations.length<this.config.maxCalendarEvents; ++i) {
+			const calendarEvent = payload[i];
+			if ("location" in calendarEvent &&
+					calendarEvent.location !== undefined &&
+					calendarEvent.location !== false &&
+					calendarEvent.startDate < (Date.now() + this.config.maxCalendarTime)
 			) {
 				this.appointmentDestinations.push.apply(this.appointmentDestinations,
 					this.config.calendarOptions.map( calOpt => Object.assign({}, calOpt, {
-						label: calevt.title,
-						destination: calevt.location,
-						arrival_time: calevt.startDate
+						label: calendarEvent.title,
+						destination: calendarEvent.location,
+						arrival_time: calendarEvent.startDate
 					}))
 				);
 			}
@@ -253,20 +251,19 @@ Module.register("MMM-MyCommute", {
 		Log.log(this.name + " refreshing routes");
 
 		//only poll if in window
-		if ( this.isInWindow( this.config.startTime, this.config.endTime, this.config.hideDays ) ) {
+		if (this.isInWindow(this.config.startTime, this.config.endTime, this.config.hideDays)) {
 			//build URLs
-			var destinationGetInfo = [];
-			var destinations = this.getDestinations();
-			for(var i = 0; i < destinations.length; i++) {
+			let destinationGetInfo = [];
+			const destinations = this.getDestinations();
+			for(let i = 0; i < destinations.length; i++) {
+				const d = destinations[i];
 
-				var d = destinations[i];
+				const destStartTime = d.startTime || "00:00";
+				const destEndTime = d.endTime || "23:59";
+				const destHideDays = d.hideDays || [];
 
-				var destStartTime = d.startTime || "00:00";
-				var destEndTime = d.endTime || "23:59";
-				var destHideDays = d.hideDays || [];
-
-				if ( this.isInWindow( destStartTime, destEndTime, destHideDays ) ) {
-					var url = "https://maps.googleapis.com/maps/api/directions/json" + this.getParams(d);
+				if (this.isInWindow(destStartTime, destEndTime, destHideDays)) {
+					const url = "https://maps.googleapis.com/maps/api/directions/json" + this.getParams(d);
 					destinationGetInfo.push({ url:url, config: d});
 				}
 
@@ -290,13 +287,14 @@ Module.register("MMM-MyCommute", {
 
 	getParams: function(dest) {
 
-		var params = "?";
+		let params = "?";
 		params += "origin=" + encodeURIComponent(dest.origin || this.config.origin);
 		params += "&destination=" + encodeURIComponent(dest.destination);
 		params += "&key=" + this.config.apikey;
 		params += "&language=" + this.config.lang;
+
 		//travel mode
-		var mode = "driving";
+		let mode = "driving";
 		if (dest.mode && this.travelModes.indexOf(dest.mode) !== -1) {
 			mode = dest.mode;
 		}
@@ -304,8 +302,8 @@ Module.register("MMM-MyCommute", {
 
 		//transit mode if travelMode = "transit"
 		if (mode === "transit" && dest.transitMode) {
-			var tModes = dest.transitMode.split("|");
-			var sanitizedTransitModes = "";
+			const tModes = dest.transitMode.split("|");
+			let sanitizedTransitModes = "";
 			for (let i = 0; i < tModes.length; i++) {
 				if (this.transitModes.indexOf(tModes[i]) !== -1) {
 					sanitizedTransitModes += (sanitizedTransitModes === "" ? tModes[i] : "|" + tModes[i]);
@@ -317,7 +315,7 @@ Module.register("MMM-MyCommute", {
 		}
 
 		if (dest.waypoints) {
-			var waypoints = dest.waypoints.split("|");
+			const waypoints = dest.waypoints.split("|");
 			for (let i = 0; i < waypoints.length; i++) {
 				waypoints[i] = "via:" + encodeURIComponent(waypoints[i]);
 			}
@@ -326,8 +324,8 @@ Module.register("MMM-MyCommute", {
 
 		//avoid
 		if (dest.avoid) {
-			var a = dest.avoid.split("|");
-			var sanitizedAvoidOptions = "";
+			const a = dest.avoid.split("|");
+			let sanitizedAvoidOptions = "";
 			for (let i = 0; i < a.length; i++) {
 				if (this.avoidOptions.indexOf(a[i]) !== -1) {
 					sanitizedAvoidOptions += (sanitizedAvoidOptions === "" ? a[i] : "|" + a[i]);
@@ -336,9 +334,7 @@ Module.register("MMM-MyCommute", {
 			if (sanitizedAvoidOptions.length > 0) {
 				params += "&avoid=" + sanitizedAvoidOptions;
 			}
-
 		}
-
 		if (dest.alternatives === true) {
 			params += "&alternatives=true";
 		}
@@ -346,7 +342,7 @@ Module.register("MMM-MyCommute", {
 		if (dest.arrival_time) {
 			params += "&arrival_time=" + dest.arrival_time;
 		} else {
-			params += "&departure_time=now"; //needed for time based on traffic conditions
+			params += "&departure_time=now";	//needed for time based on traffic conditions
 		}
 
 		return params;
@@ -354,24 +350,23 @@ Module.register("MMM-MyCommute", {
 	},
 
 	svgIconFactory: function(glyph) {
-
-		var svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+		const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 		svg.setAttributeNS(null, "class", "transit-mode-icon");
-		var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+
+		const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
 		use.setAttributeNS("http://www.w3.org/1999/xlink", "href", "modules/MMM-MyCommute/icon_sprite.svg#" + glyph);
 		svg.appendChild(use);
-
 		return(svg);
 	},
 
 	formatTime: function(time, timeInTraffic) {
 
-		var timeEl = document.createElement("span");
+		const timeEl = document.createElement("span");
 		timeEl.classList.add("travel-time");
 		if (timeInTraffic != null) {
 			timeEl.innerHTML = moment.duration(Number(timeInTraffic), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim});
 
-			var variance = timeInTraffic / time;
+			const variance = timeInTraffic / time;
 			if (this.config.colorCodeTravelTime) {
 				if (variance > this.config.poorTimeThreshold) {
 					timeEl.classList.add("status-poor");
@@ -386,15 +381,12 @@ Module.register("MMM-MyCommute", {
 			timeEl.innerHTML = moment.duration(Number(time), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim});
 			timeEl.classList.add("status-good");
 		}
-
 		return timeEl;
 
 	},
 
 	getTransitIcon: function(dest, route) {
-
-		var transitIcon;
-
+		let transitIcon;
 		if (dest.transitMode) {
 			transitIcon = dest.transitMode.split("|")[0];
 			if (this.symbols[transitIcon] != null) {
@@ -411,13 +403,12 @@ Module.register("MMM-MyCommute", {
 
 	buildTransitSummary: function(transitInfo, summaryContainer) {
 
-		for (var i = 0; i < transitInfo.length; i++) {
-
-			var transitLeg = document.createElement("span");
+		for (let i = 0; i < transitInfo.length; i++) {
+			const transitLeg = document.createElement("span");
 			transitLeg.classList.add("transit-leg");
 			transitLeg.appendChild(this.svgIconFactory(this.symbols[transitInfo[i].vehicle.toLowerCase()]));
 
-			var routeNumber = document.createElement("span");
+			const routeNumber = document.createElement("span");
 			routeNumber.innerHTML = transitInfo[i].routeLabel;
 
 			if (transitInfo[i].arrivalTime) {
@@ -427,38 +418,31 @@ Module.register("MMM-MyCommute", {
 			transitLeg.appendChild(routeNumber);
 			summaryContainer.appendChild(transitLeg);
 		}
-
 	},
 
-
 	getDom: function() {
-
-		var wrapper = document.createElement("div");
-
+		const wrapper = document.createElement("div");
 		if (this.loading) {
-			var loading = document.createElement("div");
+			const loading = document.createElement("div");
 			loading.innerHTML = this.translate("LOADING");
 			loading.className = "dimmed light small";
 			wrapper.appendChild(loading);
 			return wrapper
 		}
 
-		var destinations = this.getDestinations();
-		for (var i = 0; i < this.predictions.length; i++) {
-
-			var p = this.predictions[i];
-
-			var row = document.createElement("div");
+		const destinations = this.getDestinations();
+		for (let i = 0; i < this.predictions.length; i++) {
+			const p = this.predictions[i];
+			const row = document.createElement("div");
 			row.classList.add("row");
-
-			var destination = document.createElement("span");
+			const destination = document.createElement("span");
 			destination.className = "destination-label bright";
 			destination.innerHTML = p.config.label;
 			row.appendChild(destination);
 
-			var icon = document.createElement("span");
+			const icon = document.createElement("span");
 			icon.className = "transit-mode bright";
-			var symbolIcon = "car";
+			let symbolIcon = "car";
 			if (destinations[i].color) {
 				icon.setAttribute("style", "color:" + p.config.color);
 			}
@@ -471,15 +455,13 @@ Module.register("MMM-MyCommute", {
 			if (p.error) {
 
 				//no routes available.	display an error instead.
-				var errorTxt = document.createElement("span");
+				const errorTxt = document.createElement("span");
 				errorTxt.classList.add("route-error");
 				errorTxt.innerHTML = "Error";
 				row.appendChild(errorTxt);
 
 			} else if (p.routes.length === 1 || !this.config.showSummary) {
-
 				let r = p.routes[0];
-
 				row.appendChild( this.formatTime(r.time, r.timeInTraffic) );
 
 				//summary?
@@ -488,27 +470,20 @@ Module.register("MMM-MyCommute", {
 					singleSummary.classList.add("route-summary");
 
 					if (r.transitInfo) {
-
 						symbolIcon = this.getTransitIcon(p.config,r);
 						this.buildTransitSummary(r.transitInfo, singleSummary);
-
 					} else {
 						singleSummary.innerHTML = r.summary;
 					}
 					row.appendChild(singleSummary);
 				}
-
-
 			} else {
-
 				row.classList.add("with-multiple-routes");
 
-				for (var j = 0; j < p.routes.length; j++) {
-					var routeSummaryOuter = document.createElement("div");
+				for (let j = 0; j < p.routes.length; j++) {
+					const routeSummaryOuter = document.createElement("div");
 					routeSummaryOuter.classList.add("route-summary-outer");
-
 					let r = p.routes[j];
-
 					routeSummaryOuter.appendChild( this.formatTime(r.time, r.timeInTraffic) );
 
 					var multiSummary = document.createElement("div");
@@ -523,36 +498,28 @@ Module.register("MMM-MyCommute", {
 					}
 					routeSummaryOuter.appendChild(multiSummary);
 					row.appendChild(routeSummaryOuter);
-
 				}
-
 			}
-
-			var svg = this.svgIconFactory(symbolIcon);
+			const svg = this.svgIconFactory(symbolIcon);
 			icon.appendChild(svg);
 			row.appendChild(icon);
-
 			wrapper.appendChild(row);
 		}
 
 		if(this.config.showUpdated) {
-			var updatedRow = document.createElement("div");
-			//updatedRow.classList.add("row");
+			const updatedRow = document.createElement("div");
 			updatedRow.classList.add("light");
 			updatedRow.classList.add("xsmall");
 			updatedRow.innerHTML = this.translate("LAST_REFRESHED") + this.lastUpdated.format("HH:mm");
 			wrapper.appendChild(updatedRow);
 		}
-
 		return wrapper;
 	},
 
 	socketNotificationReceived: function(notification, payload) {
 		if ( notification === "GOOGLE_TRAFFIC_RESPONSE" + this.identifier ) {
-
 			this.predictions = payload;
 			this.lastUpdated = moment();
-
 			if (this.loading) {
 				this.loading = false;
 				if (this.isHidden) {
@@ -569,11 +536,9 @@ Module.register("MMM-MyCommute", {
 			}
 			this.isHidden = false;
 		}
-
-
 	},
 
-	notificationReceived: function(notification, payload, sender) {
+	notificationReceived: function(notification, payload) {
 		if ( notification === "DOM_OBJECTS_CREATED" && !this.inWindow) {
 			this.hide(0, {lockString: this.identifier});
 			this.isHidden = true;
@@ -581,5 +546,4 @@ Module.register("MMM-MyCommute", {
 			this.setAppointmentDestinations(payload);
 		}
 	}
-
 });
