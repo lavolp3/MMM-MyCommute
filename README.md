@@ -68,7 +68,7 @@ If you don’t want a header, then just omit it.
 
 Option                              | Description
 ----------------------------------- | -----------
-`apikey`                            | **REQUIRED** API Key from Google<br><br>**Type:** `string`
+`apiKey`                            | **REQUIRED** API Key from Google<br><br>**Type:** `string`
 `origin`                            | **REQUIRED** The starting point for your commute. Usually this is your home address.<br><br>**Type:** `string`<br>This is as you would see it Google Maps. Example: `65 Front St W, Toronto, ON M5J 1E6`
 `startTime`                         | The start time of the window during which this module wil be visible.<br><br>**Type:** `string`<br>Must be in 24-hour time format. Defaults to `00:00` (i.e.: midnight)
 `endTime`                           | The end time of the window during which this module wil be visible.<br><br>**Type:** `string`<br>Must be in 24-hour time format. Defaults to `23:59` (i.e.: one minute before midnight).
