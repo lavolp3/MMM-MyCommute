@@ -6,7 +6,7 @@ It shows your commute time using Google's Directions API (requires an API Key fr
 
 It is a fork of [jclarke0000's work](https://github.com/jclarke0000/MMM-MyCommute/)
 
-![Screen Shot](/../screenshots/MMM-MyCommute-screenshot.png?raw=true "Screen Shot")
+![Screenshot](/screenshots/MMM-MyCommute-screenshot.png?raw=true "Screenshot")
 
 ## Installation
 
