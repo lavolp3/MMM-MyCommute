@@ -109,7 +109,7 @@ Here is an example of an entry in `config.js`
   module: 'MMM-MyCommute',
   position: 'top_left',
   config: {
-    apikey: 'API_KEY_FROM_GOOGLE',
+    apiKey: 'API_KEY_FROM_GOOGLE',
     origin: '65 Front St W, Toronto, ON M5J 1E6',
     startTime: '00:00',
     endTime: '23:59',
@@ -158,7 +158,7 @@ Here is an example of an entry in `config.js` including calendar event routes
   module: 'MMM-MyCommute',
   position: 'top_left',
   config: {
-    apikey: 'API_KEY_FROM_GOOGLE',
+    apiKey: 'API_KEY_FROM_GOOGLE',
     origin: '65 Front St W, Toronto, ON M5J 1E6',
     destinations: [
       {
