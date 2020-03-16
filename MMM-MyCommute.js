@@ -531,7 +531,7 @@ Module.register("MMM-MyCommute", {
 				}
 			} else {
 				this.updateDom();
-				if ( this.hidden ) {
+				if ( this.isHidden ) {
 					this.show(1000, { lockString: this.identifier });
 				}
 			}
