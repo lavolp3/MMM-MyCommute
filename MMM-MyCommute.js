@@ -230,7 +230,8 @@ Module.register("MMM-MyCommute", {
 					this.config.calendarOptions.map( calOpt => Object.assign({}, calOpt, {
 						label: calendarEvent.title,
 						destination: calendarEvent.location,
-						arrival_time: calendarEvent.startDate
+						arrival_time: calendarEvent.startDate / 1000,
+						color: calendarEvent.color
 					}))
 				);
 			}
