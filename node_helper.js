@@ -37,9 +37,12 @@ module.exports = NodeHelper.create({
 					if (data.error_message) {
 						console.log("MMM-MyCommute: " + data.error_message);
 						prediction.error = true;
+						prediction.error_msg = data.error_message;
 					} else if (data.status !== "OK") {
 						console.log("MMM-MyCommute: " + data.status);
+						console.debug(data);
 						prediction.error = true;
+						prediction.error_msg = "data.status != OK: " + data.status;
 					} else {
 						const routeList = [];
 						for (let i = 0; i < data.routes.length; i++) {
@@ -71,6 +74,7 @@ module.exports = NodeHelper.create({
 									const travelModes = r.legs[0].steps.map(s => s.travel_mode).join(", ");
 									console.log("MMM-MyCommute: transit directrions does not contain any transits (" + travelModes + ")");
 									prediction.error = true;
+									prediction.error_msg = "MMM-MyCommute: transit directrions does not contain any transits (" + travelModes + ")";
 								}
 							}
 							routeList.push(routeObj);
@@ -81,8 +85,10 @@ module.exports = NodeHelper.create({
 					prediction.error = true;
 					if (response !== undefined) {
 						console.log("Error getting traffic prediction: " + response.statusCode);
+						prediction.error_msg = "Error getting traffic prediction: " + response.statusCode;
 					} else {
 						console.log("Error getting traffic prediction: " + error);
+						prediction.error_msg = "Error getting traffic prediction: " + error;
 					}
 				}
 				predictions[index] = prediction;

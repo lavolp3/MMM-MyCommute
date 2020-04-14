@@ -460,8 +460,9 @@ Module.register("MMM-MyCommute", {
 				//no routes available.	display an error instead.
 				const errorTxt = document.createElement("span");
 				errorTxt.classList.add("route-error");
-				errorTxt.innerHTML = "Error";
+				errorTxt.innerHTML = "Error: " + p.error_msg;
 				row.appendChild(errorTxt);
+				console.error("MMM-MyCommute error: " + p.error_msg, "Config:", p.config);
 
 			} else if (p.routes.length === 1 || !this.config.showSummary) {
 				let r = p.routes[0];
