@@ -187,6 +187,15 @@ Here is an example of an entry in `config.js` including calendar event routes
 }
 ```
 
+## Troubleshooting
+
+If the module seems to malfunction or doesn't show any route information at all, here are some guidelines to help you fix it:
+
+- Check the server side log of MagicMirror
+- Check the client side log of your mirror
+- Check the [known issues](https://github.com/qistoph/MMM-MyCommute/issues/)
+- Create a new issue, including a clear description of your problem and the relevant server and client logs
+
 ## Dependencies
 
 Installed during installation
