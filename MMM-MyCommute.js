@@ -169,7 +169,11 @@ Module.register("MMM-MyCommute", {
 		Log.log(this.name + " resumed");
 		if(this.suspended) {
 			this.suspended = false;
-			this.getData();
+
+			if(new Date() - this.lastUpdate > this.pollFrequency) {
+				// Last refresh, before suspend, is too old. Update now
+				this.getData();
+			}
 			this.rescheduleInterval();
 		}
 	},
@@ -246,6 +250,8 @@ Module.register("MMM-MyCommute", {
 		return this.config.destinations.concat(this.appointmentDestinations);
 	},
 
+	lastUpdate: 0,
+
 	getData: function() {
 		Log.log(this.name + " refreshing routes");
 
@@ -275,6 +281,8 @@ Module.register("MMM-MyCommute", {
 				this.inWindow = false;
 				this.isHidden = true;
 			}
+
+			this.lastUpdate = new Date();
 		} else {
 			this.hide(1000, {lockString: this.identifier});
 			this.inWindow = false;
