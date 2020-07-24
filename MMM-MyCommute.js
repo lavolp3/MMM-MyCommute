@@ -170,7 +170,7 @@ Module.register("MMM-MyCommute", {
 		if(this.suspended) {
 			this.suspended = false;
 
-			if(new Date() - this.lastUpdate > this.pollFrequency) {
+			if(new Date() - this.lastUpdate > this.config.pollFrequency) {
 				// Last refresh, before suspend, is too old. Update now
 				this.getData();
 			}
