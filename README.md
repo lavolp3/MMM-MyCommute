@@ -92,6 +92,7 @@ Each object in the `destinations` array can have the following parameters:
 
 Option                       | Description
 ---------------------------- | -----------
+`origin`                     | **OTPIONAL** The address of the origin. You can leave this out so the base origin (above) will be used<br><br>**Type:** `string`
 `destination`                | **REQUIRED** The address of the destination<br><br>**Type:** `string`
 `label`                      | **REQUIRED** How you would like this displayed on your MagicMirror.<br><br>**Type:** `string`
 `mode`                       | Transportation mode, one of the following: `driving`, `walking`, `bicycling`, `transit`.<br><br>**Type:** `string`<br>Defaults to `driving`.
