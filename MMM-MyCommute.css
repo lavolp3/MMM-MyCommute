@@ -3,7 +3,7 @@
   padding: 1px;
   border-bottom: solid 1px #222;
   min-height: 35px;
-  min-width: 300px;
+  min-width: 390px;
 }
 
 .MMM-MyCommute .transit-mode {
@@ -11,7 +11,7 @@
   text-align: center;
   position: absolute;
   top: 6px;
-  left: 0px;
+  left: 0;
   display: block;
 }
 
@@ -37,7 +37,7 @@
 }
 
 .MMM-MyCommute .row.with-multiple-routes .destination-label {
-  margin-right: 0px;
+  margin-right: 0;
 }
 
 .MMM-MyCommute .travel-time,
@@ -50,7 +50,7 @@
   white-space: nowrap;
   position: absolute;
   top: 6px;
-  right: 0px;
+  right: 0;
   line-height: 18px;
   margin-top: 4px;
 }
@@ -59,17 +59,17 @@
   color: #be0e0e;
 }
 
-
-.MMM-MyCommute .travel-time.status-good {  
+.MMM-MyCommute .travel-time.status-good {
   color: #a3ea80;
 }
-.MMM-MyCommute .travel-time.status-moderate {  
+
+.MMM-MyCommute .travel-time.status-moderate {
   color: #f8dd70;
 }
-.MMM-MyCommute .travel-time.status-poor {  
+
+.MMM-MyCommute .travel-time.status-poor {
   color: #ff5a44;
 }
-
 
 .MMM-MyCommute .route-summary {
   font-size: 16px;
@@ -81,12 +81,13 @@
   line-height: 18px;
   margin-bottom: 6px;
   margin-left: 30px;
-  /*text-transform: uppercase;*/
   text-align: left;
+
+  /* text-transform: uppercase; */
 }
 
 .MMM-MyCommute .route-summary-outer {
-  position: relative;  
+  position: relative;
 }
 
 .MMM-MyCommute .route-summary-outer .route-summary {
@@ -94,8 +95,8 @@
 }
 
 .MMM-MyCommute .route-summary-outer .travel-time {
-  top: 0px;
-  margin-top: 0px;
+  top: 0;
+  margin-top: 0;
 }
 
 .MMM-MyCommute .route-summary .transit-leg {
@@ -114,5 +115,5 @@
   fill: currentColor;
   vertical-align: baseline;
   margin-bottom: -2px;
-  margin-right: 2px;  
+  margin-right: 2px;
 }
