@@ -58,9 +58,13 @@ Module.register('MMM-MyCommute', {
 
   // Define required scripts.
   getScripts: function() {
-    return ["moment.js", this.file("node_modules/moment-duration-format/lib/moment-duration-format.js")];
+    return [
+      "moment.js",
+      this.file("node_modules/moment-duration-format/lib/moment-duration-format.js"),
+      this.file("node_modules/highcharts/highstock.js")
+    ];
   },
-  
+
   // Define required styles.
   getStyles: function () {
     return ["MMM-MyCommute.css", "font-awesome.css"];
@@ -115,24 +119,25 @@ Module.register('MMM-MyCommute', {
     'gondola_lift':     'gondola',
     'funicular':        'gondola',
     'other':            'streetcar'
-  },  
+  },
 
   start: function() {
 
     Log.info('Starting module: ' + this.name);
 
     this.predictions = new Array();
+    this.commuteData = {};
     this.loading = true;
     this.inWindow = true;
     this.isHidden = false;
 
     //start data poll
     this.getData();
-    var self = this;
+    /*var self = this;
     setInterval(function() {
       self.getData();
-    }, this.config.pollFrequency);
-      
+    }, this.config.pollFrequency);*/
+
   },
 
   /*
@@ -187,14 +192,15 @@ Module.register('MMM-MyCommute', {
         if ( this.isInWindow( destStartTime, destEndTime, destHideDays ) ) {
           var url = 'https://maps.googleapis.com/maps/api/directions/json' + this.getParams(d);
           destinations.push({ url:url, config: d});
-          console.log(url);          
+          console.log(url);
         }
 
       }
       this.inWindow = true;
 
-      if (destinations.length > 0) {        
-        this.sendSocketNotification("GOOGLE_TRAFFIC_GET", {destinations: destinations, instanceId: this.identifier});
+      if (destinations.length > 0) {
+        console.log("Sending socket notification");
+        this.sendSocketNotification("GOOGLE_TRAFFIC_GET", {destinations: destinations, config: this.config, instanceId: this.identifier});
       } else {
         this.hide(1000, {lockString: this.identifier});
         this.inWindow = false;
@@ -268,7 +274,7 @@ Module.register('MMM-MyCommute', {
 
     return params;
 
-  },  
+  },
 
   svgIconFactory: function(glyph) {
 
@@ -277,8 +283,38 @@ Module.register('MMM-MyCommute', {
     var use = document.createElementNS('http://www.w3.org/2000/svg', "use");
     use.setAttributeNS("http://www.w3.org/1999/xlink", "href", "modules/MMM-MyCommute/icon_sprite.svg#" + glyph);
     svg.appendChild(use);
-    
+
     return(svg);
+  },
+
+  chartDataFactory: function(data) {
+    var route = this.predictions[0].config.label;
+    var chartData = {
+      title: route,
+      data: [],
+      startAt: parseInt(moment(this.predictions[0].config.startTime, "HH:mm").format('x')),
+      endAt: parseInt(moment(this.predictions[0].config.endTime, "HH:mm").format('x'))
+    };
+    for (var i = 0; i < data[route].data.length; i++) {
+      var date = moment(data[route].data[i][0], 'X');
+      if (date.day() == moment().day()) {
+        var variance = data[route].data[i][1] / data[route].time;
+        if (variance > this.config.poorTimeThreshold) {
+          pointColor = 'red'
+        } else if (variance > this.config.moderateTimeThreshold) {
+          pointColor = 'orange'
+        } else {
+          pointColor = 'green'
+        }
+        chartData.data.push({
+          x: parseInt(date.format('x')),
+          y: ( Math.round(data[route].data[i][1]/0.6) / 100),
+          color: pointColor
+        });
+      }
+    }
+    console.log(chartData);
+    return chartData
   },
 
   formatTime: function(time, timeInTraffic) {
@@ -289,7 +325,7 @@ Module.register('MMM-MyCommute', {
       timeEl.innerHTML = moment.duration(Number(timeInTraffic), "seconds").format(this.config.travelTimeFormat, {trim: this.config.travelTimeFormatTrim});
 
       var variance = timeInTraffic / time;
-      if (this.config.colorCodeTravelTime) {            
+      if (this.config.colorCodeTravelTime) {
         if (variance > this.config.poorTimeThreshold) {
           timeEl.classList.add("status-poor");
         } else if (variance > this.config.moderateTimeThreshold) {
@@ -352,133 +388,275 @@ Module.register('MMM-MyCommute', {
   getDom: function() {
 
     var wrapper = document.createElement("div");
-    
+
+    var routesWrapper = document.createElement("div");
+    routesWrapper.id = "commute-routes-wrapper"; 
+    var chartWrapper = document.createElement("div");
+    chartWrapper.id = "commute-chart-wrapper";
+
+    wrapper.appendChild(routesWrapper);
+    wrapper.appendChild(chartWrapper);
+    return wrapper;
+  },
+
+
+  update: function() {
+
+    var routesWrapper = document.getElementById("commute-routes-wrapper");
+    routesWrapper.innerHTML = "";
+    var chartWrapper = document.getElementById("commute-chart-wrapper");
+
+
     if (this.loading) {
       var loading = document.createElement("div");
         loading.innerHTML = this.translate("LOADING");
         loading.className = "dimmed light small";
-        wrapper.appendChild(loading);
-      return wrapper
-    }
+        routesWrapper.appendChild(loading);
 
-    for (var i = 0; i < this.predictions.length; i++) {
+    } else {
 
-      var p = this.predictions[i];
+      for (var i = 0; i < this.predictions.length; i++) {
 
-      var row = document.createElement("div");
-      row.classList.add("row");
+        var p = this.predictions[i];
 
-      var destination = document.createElement("span");
-      destination.className = "destination-label bright";
-      destination.innerHTML = p.config.label;
-      row.appendChild(destination);
+        var row = document.createElement("div");
+        row.classList.add("row");
 
-      var icon = document.createElement("span");
-      icon.className = "transit-mode bright";
-      var symbolIcon = 'car';
-      if (this.config.destinations[i].color) {
-        icon.setAttribute("style", "color:" + p.config.color);
-      }
+        var destination = document.createElement("span");
+        destination.className = "destination-label bright";
+        destination.innerHTML = p.config.label;
+        row.appendChild(destination);
 
-      if (p.config.mode && this.symbols[p.config.mode]) {
-        symbolIcon = this.symbols[p.config.mode];
-      }
-
-      //different rendering for single route vs multiple
-      if (p.error) {
-
-        //no routes available.  display an error instead.
-        var errorTxt = document.createElement("span");
-        errorTxt.classList.add("route-error");
-        errorTxt.innerHTML = "Error";
-        row.appendChild(errorTxt);
-
-      } else if (p.routes.length == 1 || !this.config.showSummary) {
-
-        var r = p.routes[0];
-
-        row.appendChild( this.formatTime(r.time, r.timeInTraffic) );
-
-        //summary?
-        if (this.config.showSummary) {
-          var summary = document.createElement("div");
-            summary.classList.add("route-summary");
-
-          if (r.transitInfo) {
-
-            symbolIcon = this.getTransitIcon(p.config,r);
-            this.buildTransitSummary(r.transitInfo, summary); 
-
-          } else {
-            summary.innerHTML = r.summary;
-          }
-          row.appendChild(summary);
+        var icon = document.createElement("span");
+        icon.className = "transit-mode bright";
+        var symbolIcon = 'car';
+        if (this.config.destinations[i].color) {
+          icon.setAttribute("style", "color:" + p.config.color);
         }
 
+        if (p.config.mode && this.symbols[p.config.mode]) {
+          symbolIcon = this.symbols[p.config.mode];
+        }
 
-      } else {
+        //different rendering for single route vs multiple
+        if (p.error) {
 
-        row.classList.add("with-multiple-routes");
+          //no routes available.  display an error instead.
+          var errorTxt = document.createElement("span");
+          errorTxt.classList.add("route-error");
+          errorTxt.innerHTML = "Error";
+          row.appendChild(errorTxt);
 
-        for (var j = 0; j < p.routes.length; j++) {
-          var routeSummaryOuter = document.createElement("div");
-          routeSummaryOuter.classList.add("route-summary-outer");
+        } else if (p.routes.length == 1 || !this.config.showSummary) {
 
-          var r = p.routes[j];
+          var r = p.routes[0];
 
-          routeSummaryOuter.appendChild( this.formatTime(r.time, r.timeInTraffic) );
+          row.appendChild( this.formatTime(r.time, r.timeInTraffic) );
 
-          var summary = document.createElement("div");
+          //summary?
+          if (this.config.showSummary) {
+            var summary = document.createElement("div");
+              summary.classList.add("route-summary");
+
+            if (r.transitInfo) {
+
+              symbolIcon = this.getTransitIcon(p.config,r);
+              this.buildTransitSummary(r.transitInfo, summary); 
+
+            } else {
+              summary.innerHTML = r.summary;
+            }
+            row.appendChild(summary);
+          }
+
+
+        } else {
+
+          row.classList.add("with-multiple-routes");
+
+          for (var j = 0; j < p.routes.length; j++) {
+            var routeSummaryOuter = document.createElement("div");
+            routeSummaryOuter.classList.add("route-summary-outer");
+
+            var r = p.routes[j];
+
+            routeSummaryOuter.appendChild( this.formatTime(r.time, r.timeInTraffic) );
+
+            var summary = document.createElement("div");
             summary.classList.add("route-summary");
 
-          if (r.transitInfo) {
-            symbolIcon = this.getTransitIcon(p.config,r);
-            this.buildTransitSummary(r.transitInfo, summary); 
+            if (r.transitInfo) {
+              symbolIcon = this.getTransitIcon(p.config,r);
+              this.buildTransitSummary(r.transitInfo, summary); 
 
-          } else {
-            summary.innerHTML = r.summary;
+            } else {
+              summary.innerHTML = r.summary;
+            }
+            routeSummaryOuter.appendChild(summary);
+            row.appendChild(routeSummaryOuter);
+
           }
-          routeSummaryOuter.appendChild(summary);
-          row.appendChild(routeSummaryOuter);
 
-        } 
+        }
 
+        var svg = this.svgIconFactory(symbolIcon);
+        icon.appendChild(svg);
+        row.appendChild(icon);
+
+        routesWrapper.appendChild(row);
       }
-
-
-
-
-      
-
-      var svg = this.svgIconFactory(symbolIcon);
-      icon.appendChild(svg);
-      row.appendChild(icon);
-      
-      
-
-      wrapper.appendChild(row);
     }
 
+    if (this.commuteData) {
+      var chartData = this.chartDataFactory(this.commuteData);
 
-    return wrapper;
+      Highcharts.chart(chartWrapper, {
+        chart: {
+          type: 'scatter',
+          zoomType: 'xy',
+          backgroundColor: 'rgba(0,0,0,0)',
+          events: {
+            load: function() {
+              var chart = this,
+              yAxis = chart.yAxis[0];
+
+              chart.update({
+                plotOptions: {
+                  series: {
+                    color: {
+                      linearGradient: [0, yAxis.min, 0, yAxis.max]
+                    }
+                  }
+                }
+              });
+            },
+          }
+        },
+        time: {
+          timezone: 'Europe/Berlin',
+        },
+        title: {
+          text: chartData.title,
+        },
+        subtitle: {
+          //text: 'Source: Heinz  2003'
+        },
+        xAxis: {
+          title: {
+            enabled: false,
+            text: ''
+          },
+          type: 'datetime',
+          startOnTick: true,
+          endOnTick: true,
+          showLastLabel: true,
+          min: chartData.startAt,
+          max: chartData.endAt,
+          labels: {
+            style: {
+              fontSize: "16px",
+            }
+          }
+
+        },
+        yAxis: {
+          title: {
+            enabled: false,
+          },
+          alternateGridColor: '#111111',
+          labels: {
+            style: {
+              fontSize: "16px",
+            },
+            formatter: function () {
+              var value = moment().startOf('day').add(this.value, "minutes");
+              if (this.value > 60) {
+                return value.hour() + "h " + value.minute() + "m";
+              } else if (this.value == 60) {
+                return value.hour() + "h "
+              } else{
+                return value.minute() + "m";
+              }
+            }
+          }
+        },
+        legend: {
+          enabled: false,
+          layout: 'vertical',
+          align: 'left',
+          verticalAlign: 'top',
+          x: 100,
+          y: 70,
+          floating: true,
+          backgroundColor: Highcharts.defaultOptions.chart.backgroundColor,
+          borderWidth: 1
+        },
+        plotOptions: {
+          scatter: {
+            marker: {
+              radius: 4,
+              /*states: {
+                hover: {
+                  enabled: true,
+                  lineColor: 'rgb(100,100,100)'
+                }
+              }*/
+            },
+            color: {
+              linearGradient: [0, 0, 0, 0],
+              stops: [
+                [0, 'red'], // start
+                [0.6, 'yellow'], // middle
+                [0.9, 'green'] // end
+              ]
+            },
+            states: {
+              hover: {
+                marker: {
+                  enabled: false
+                }
+              }
+            },
+            tooltip: {
+              headerFormat: '<b>{series.name}</b><br>',
+              //pointFormat: '{point.x}, {point.y}',
+              pointFormatter: function () {
+                return (moment(this.x).format("DD.MM.YY HH:mm") + " - " + Math.round(this.y) + " min")
+              }
+            }
+          }
+        },
+        series: [
+          {
+            name: 'Commute times',
+            //color: chartData.pointColors,
+            data: chartData.data,
+          }
+        ]
+      })
+    }
   },
-  
+
   socketNotificationReceived: function(notification, payload) {
     if ( notification === 'GOOGLE_TRAFFIC_RESPONSE' + this.identifier ) {
 
-      this.predictions = payload;
+      console.log("MMM-MyCommute: Socket Notification received");
+      this.predictions = payload.predictions;
+      this.commuteData = payload.commuteData;
+
+      console.log(JSON.stringify(this.predictions));
 
       if (this.loading) {
         this.loading = false;
         if (this.isHidden) {
-          this.updateDom();
+          this.update();
           this.show(1000, {lockString: this.identifier});
         } else {
-          this.updateDom(1000);
+          this.update();
         }
       } else {
-        this.updateDom();
-        this.show(1000, {lockString: this.identifier});        
+        this.update();
+        this.show(1000, {lockString: this.identifier});
       }
       this.isHidden = false;
     }
