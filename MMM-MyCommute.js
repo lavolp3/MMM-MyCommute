@@ -29,6 +29,8 @@ Module.register('MMM-MyCommute', {
     travelTimeFormat: "m [min]",
     travelTimeFormatTrim: "left",
     pollFrequency: 10 * 60 * 1000, //every ten minutes, in milliseconds
+    chartVariance: false,
+    compareRoutes: false,
     destinations: [
       {
         destination: '40 Bay St, Toronto, ON M5J 2X2',
@@ -133,11 +135,10 @@ Module.register('MMM-MyCommute', {
 
     //start data poll
     this.getData();
-    /*var self = this;
+    var self = this;
     setInterval(function() {
       self.getData();
-    }, this.config.pollFrequency);*/
-
+    }, this.config.pollFrequency);
   },
 
   /*
@@ -288,29 +289,45 @@ Module.register('MMM-MyCommute', {
   },
 
   chartDataFactory: function(data) {
-    var route = this.predictions[0].config.label;
-    var chartData = {
-      title: route,
-      data: [],
-      startAt: parseInt(moment(this.predictions[0].config.startTime, "HH:mm").format('x')),
-      endAt: parseInt(moment(this.predictions[0].config.endTime, "HH:mm").format('x'))
-    };
-    for (var i = 0; i < data[route].data.length; i++) {
-      var date = moment(data[route].data[i][0], 'X');
-      if (date.day() == moment().day()) {
-        var variance = data[route].data[i][1] / data[route].time;
-        if (variance > this.config.poorTimeThreshold) {
-          pointColor = 'red'
-        } else if (variance > this.config.moderateTimeThreshold) {
-          pointColor = 'orange'
-        } else {
-          pointColor = 'green'
+    var chartData = [];
+    var limit = (this.config.compareRoutes) ? this.predictions.length : 1;
+    for (var p = 0; p < limit; p++ ) {
+      var route = this.predictions[p].config.label;
+      chartData[p] = {
+        title: route,
+        data: [],
+        startAt: parseInt(moment(this.predictions[p].config.startTime, "HH:mm").format('x')),
+        endAt: parseInt(moment(this.predictions[p].config.endTime, "HH:mm").format('x'))
+      };
+      for (var i = 0; i < data[route].data.length; i++) {
+        var date = moment(data[route].data[i][0], 'X');
+        //console.log("Date: " + date.day() + ", Today: " +  moment().day());
+        //console.log(date.format('DD.MM.YY HH:mm'));
+        if (date.day() == moment().day()) {
+          var visibility = (date.isBetween(moment().startOf('week'), moment())) ? 0.9 : 0.4;
+          var variance = (data[route].data[i][1] / data[route].time);
+          //console.log("Time: " + data[route].time/60);
+          //console.log("Variance: " + variance);
+          if (this.config.chartVariance) {
+            if (variance > this.config.poorTimeThreshold) {
+              pointColor = 'rgba(245, 10, 10, ' + visibility + ')'
+            } else if (variance > this.config.moderateTimeThreshold) {
+              pointColor = 'rgba(245, 200, 5, ' + visibility + ')'
+            } else {
+              pointColor = 'rgba(10, 245, 10, ' + visibility + ')'
+            }
+          } else {
+            pointColor = this.predictions[p].config.color
+          }
+          //console.log(date.format('DD.MM.YY HH:mm'));
+          var weekDiff = moment().week() - date.week();
+          //console.log(date.clone().add(weekDiff, 'weeks').format('DD.MM.YY HH:mm'));
+          chartData[p].data.push({
+            x: parseInt(date.add(weekDiff, 'weeks').format('x')),
+            y: ( Math.round(data[route].data[i][1]/0.6) / 100),
+            color: pointColor
+          });
         }
-        chartData.data.push({
-          x: parseInt(date.format('x')),
-          y: ( Math.round(data[route].data[i][1]/0.6) / 100),
-          color: pointColor
-        });
       }
     }
     console.log(chartData);
@@ -487,7 +504,7 @@ Module.register('MMM-MyCommute', {
 
             if (r.transitInfo) {
               symbolIcon = this.getTransitIcon(p.config,r);
-              this.buildTransitSummary(r.transitInfo, summary); 
+              this.buildTransitSummary(r.transitInfo, summary);
 
             } else {
               summary.innerHTML = r.summary;
@@ -595,21 +612,15 @@ Module.register('MMM-MyCommute', {
           scatter: {
             marker: {
               radius: 4,
-              /*states: {
-                hover: {
-                  enabled: true,
-                  lineColor: 'rgb(100,100,100)'
-                }
-              }*/
             },
-            color: {
+            /*color: {
               linearGradient: [0, 0, 0, 0],
               stops: [
                 [0, 'red'], // start
                 [0.6, 'yellow'], // middle
                 [0.9, 'green'] // end
               ]
-            },
+            },*/
             states: {
               hover: {
                 marker: {
@@ -626,13 +637,7 @@ Module.register('MMM-MyCommute', {
             }
           }
         },
-        series: [
-          {
-            name: 'Commute times',
-            //color: chartData.pointColors,
-            data: chartData.data,
-          }
-        ]
+        series: chartData,
       })
     }
   },

@@ -26,7 +26,7 @@ module.exports = NodeHelper.create({
             } else {
                 var jsonData = fs.readFileSync(this.commuteFile, "utf8");
                 this.commuteData = JSON.parse(jsonData);
-		for (var route in this.commuteData) {
+		/*for (var route in this.commuteData) {
 			if (!this.commuteData[route].hasOwnProperty("time")) {
 				console.log("Converting old data...");
 				var old = this.commuteData[route];
@@ -40,7 +40,7 @@ module.exports = NodeHelper.create({
 					]);
 				}
 			}
-		}
+		}*/
                 console.log(JSON.stringify(this.commuteData));
                 console.log("Successfully loaded commute List!");
 
@@ -71,7 +71,8 @@ module.exports = NodeHelper.create({
 		const self = this;
 		let returned = 0;
 		const predictions = [];
-		payload.destinations.forEach(function (dest, index) {
+		for (var index = 0; index < payload.dstinations.length; index++) {
+			var dest = payload.destinations[index];
 			console.log("MMM-MyCommute fetching destination " + dest.config.label);
 			request({url: dest.url, method: "GET"}, function (error, response, body) {
 				const prediction = new Object({
@@ -171,6 +172,6 @@ module.exports = NodeHelper.create({
 				}
 
 			});
-		});
+		};
 	}
 });
